@@ -200,7 +200,10 @@ read_buffer(FILE *fp)
 		ret[retlen + buflen] = '\0';
 	}
 
-	/* XXXrcd: other errors? */
+	if (ferror(stdin)) {
+		perror("fgets");
+		exit(1);
+	}
 
 	return ret;
 }
@@ -225,9 +228,8 @@ read_token(gss_name_t service)
 	}
 
 	inbuf = read_buffer(stdin);
-
 	if (!inbuf)
-		/* Just a couple of \n's in a row, not really an error. */
+		/* Just a couple of \n's in a row or EOF, not an error. */
 		return 0;
 
 	in.length = base64_decode((uint8_t *)inbuf, strlen(inbuf),
@@ -269,7 +271,7 @@ import_service(char *service)
 	gss_name_t	svc = NULL;
 	OM_uint32	maj;
 	OM_uint32	min;
-	int		ret;
+	int		ret = 0;
 
 	name.length = strlen(service);
 	name.value  = service;
@@ -302,6 +304,7 @@ main(int argc, char **argv)
 	int		 ch;
 	int		 lflag = 0;
 	int		 rflag = 0;
+	int		 ret = 0;
 
 	while ((ch = getopt(argc, argv, "lr")) != -1) {
 		switch (ch) {
@@ -325,11 +328,9 @@ main(int argc, char **argv)
 	if (!rflag)
 		return write_token(service);
 
-	for (;;) {
-		int		 ret;
-
+	do {
 		ret = read_token(service);
-		if (ret)
-			return ret;
-	}
+	} while (lflag && !ret && !feof(stdin));
+
+	return ret;
 }
