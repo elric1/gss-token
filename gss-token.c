@@ -37,13 +37,19 @@
 
 #include "base64.h"
 
-#define GBAIL(x, _maj, _min)	do {				\
-		if (GSS_ERROR(_maj)) {				\
-			ret = 1;				\
-			fprintf(stderr, "%s\n",			\
-			    gss_mk_err(_maj, _min, x));		\
-			goto bail;				\
-		}						\
+#define GBAIL(x, _maj, _min)	do {					\
+		if (GSS_ERROR(_maj)) {					\
+			char	*the_gss_err;				\
+									\
+			ret = 1;					\
+			the_gss_err = gss_mk_err(_maj, _min, x);	\
+			if (the_gss_err)				\
+				fprintf(stderr, "%s\n", the_gss_err);	\
+			else						\
+				fprintf(stderr, "err making err\n");	\
+			free(the_gss_err);				\
+			goto bail;					\
+		}							\
 	} while (0)
 
 static char *
@@ -217,7 +223,7 @@ read_token(gss_name_t service)
         gss_ctx_id_t     ctx = GSS_C_NO_CONTEXT;
         gss_buffer_desc  in, out, dname;
         OM_uint32        maj, min;
-	char		*inbuf;
+	char		*inbuf = NULL;
 	char		 buf[65536];
 	int		 ret = 0;
 
@@ -260,6 +266,8 @@ read_token(gss_name_t service)
 bail:
 	if (cred)
 		gss_release_cred(&min, &cred);
+
+	free(inbuf);
 
 	return ret;
 }
