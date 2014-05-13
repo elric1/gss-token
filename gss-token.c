@@ -200,7 +200,7 @@ read_buffer(FILE *fp)
 		if (buflen == 0)
 			break;
 
-		ret = realloc(ret, retlen + buflen);
+		ret = realloc(ret, retlen + buflen + 1);
 
 		memcpy(ret + retlen, buf, buflen);
 		ret[retlen + buflen] = '\0';
