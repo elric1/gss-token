@@ -1,0 +1,35 @@
+.\"
+.\"
+.Dd May 12, 2014
+.Os
+.Dt GSS-TOKEN 1
+.Sh NAME
+.Nm gss-token
+.Nd generate and consume base64 GSS tokens
+.Sh SYNOPSIS
+.Nm
+.Op Fl lr
+.Op Ar service@host
+.Sh DESCRIPTION
+.Nm
+generates and consumes base64 encoded GSS tokens.
+It is mostly useful for testing.
+.Pp
+.Nm
+supports the following options:
+.Bl -tag -width indentxx
+.It Fl l
+loop infinitely in read mode.
+.It Fl r
+read a token rather than generate a token.
+.El
+.Pp
+.Nm
+takes one argument, a
+.Ar host@service
+specifier.
+The argument is required when generating a token but is optional if
+consuming (reading) a token.
+.Sh SEE ALSO
+.Xr gssapi 3 ,
+.Xr kerberos 8 .
