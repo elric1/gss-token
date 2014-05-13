@@ -1,0 +1,16 @@
+GSS-TOKEN
+=========
+
+gss-token is simple program that generates and consumes BASE64 encoded
+GSS tokens.  It is mostly useful for testing GSS.
+
+BUILDING
+--------
+
+To build:
+
+......................................................................
+	$ autoreconf -f -i
+	$ ./configure
+	$ make
+......................................................................
