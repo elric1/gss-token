@@ -343,14 +343,21 @@ main(int argc, char **argv)
 			usage();
 		}
 	}
+
 	argc -= optind;
 	argv += optind;
 
 	if (argc > 0)
 		service = import_service(*argv);
 
-	if (!rflag)
+	if (!rflag) {
+		if (!argc) {
+			fprintf(stderr, "Without -r, hostbased_service must "
+			    "be provided.\n");
+			usage();
+		}
 		return write_token(service, Nflag);
+	}
 
 	do {
 		ret = read_token(service, Nflag);
