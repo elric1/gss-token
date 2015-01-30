@@ -126,7 +126,7 @@ gss_mk_err(OM_uint32 maj_stat, OM_uint32 min_stat, const char *preamble)
 }
 
 static int
-write_token(gss_name_t service)
+write_token(gss_name_t service, int negotiate)
 {
 	gss_ctx_id_t	 ctx = GSS_C_NO_CONTEXT;
 	gss_buffer_desc	 in;
@@ -155,7 +155,7 @@ write_token(gss_name_t service)
 		goto bail;
 	}
 
-	printf("%s\n", base64_output);
+	printf("%s%s\n", negotiate?"Negotiate ":"", base64_output);
 
 bail:
 	if (service)
@@ -215,7 +215,7 @@ read_buffer(FILE *fp)
 }
 
 static int
-read_token(gss_name_t service)
+read_token(gss_name_t service, int negotiate)
 {
 	gss_cred_id_t	 cred = NULL;
         gss_name_t       client;
@@ -224,6 +224,7 @@ read_token(gss_name_t service)
         gss_buffer_desc  in, out, dname;
         OM_uint32        maj, min;
 	char		*inbuf = NULL;
+	char		*tmp;
 	char		 buf[65536];
 	int		 ret = 0;
 
@@ -238,7 +239,18 @@ read_token(gss_name_t service)
 		/* Just a couple of \n's in a row or EOF, not an error. */
 		return 0;
 
-	in.length = base64_decode((uint8_t *)inbuf, strlen(inbuf),
+	tmp = inbuf;
+	if (negotiate) {
+		if (strncasecmp("Negotiate ", inbuf, 10)) {
+			fprintf(stderr, "Token doesn't begin with "
+			    "\"Negotiate \"\n");
+			return -1;
+		}
+
+		tmp += 10;
+	}
+
+	in.length = base64_decode((uint8_t *)tmp, strlen(tmp),
 	    (uint8_t *)buf, sizeof(buf));
 	in.value  = buf;
 
@@ -310,12 +322,16 @@ main(int argc, char **argv)
 	extern char	*optarg;
 	extern int	 optind;
 	int		 ch;
+	int		 Nflag = 0;
 	int		 lflag = 0;
 	int		 rflag = 0;
 	int		 ret = 0;
 
-	while ((ch = getopt(argc, argv, "lr")) != -1) {
+	while ((ch = getopt(argc, argv, "Nlr")) != -1) {
 		switch (ch) {
+		case 'N':
+			Nflag = 1;
+			break;
 		case 'l':
 			lflag = 1;
 			break;
@@ -334,10 +350,10 @@ main(int argc, char **argv)
 		service = import_service(*argv);
 
 	if (!rflag)
-		return write_token(service);
+		return write_token(service, Nflag);
 
 	do {
-		ret = read_token(service);
+		ret = read_token(service, Nflag);
 	} while (lflag && !ret && !feof(stdin));
 
 	return ret;

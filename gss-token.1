@@ -8,7 +8,7 @@
 .Nd generate and consume base64 GSS tokens
 .Sh SYNOPSIS
 .Nm
-.Op Fl lr
+.Op Fl Nlr
 .Op Ar service@host
 .Sh DESCRIPTION
 .Nm
@@ -18,6 +18,10 @@ It is mostly useful for testing.
 .Nm
 supports the following options:
 .Bl -tag -width indentxx
+.It Fl N
+prepend
+.Dq Negotiate\ 
+to generated tokens and expect it on consumed tokens.
 .It Fl l
 loop infinitely in read mode.
 .It Fl r
