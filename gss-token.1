@@ -8,7 +8,13 @@
 .Nd generate and consume base64 GSS tokens
 .Sh SYNOPSIS
 .Nm
-.Op Fl Nlnr
+.Op Fl Nn
+.Op Fl c count
+.Ar service@host
+.Nm
+.Fl r
+.Op Fl Nln
+.Op Fl c count
 .Op Ar service@host
 .Sh DESCRIPTION
 .Nm
@@ -22,8 +28,14 @@ supports the following options:
 prepend
 .Dq Negotiate\ 
 to generated tokens and expect it on consumed tokens.
+.It Fl c Ar count
+repeat the operation
+.Ar count
+times.
+This is good for very basic benchmarking.
 .It Fl l
 loop infinitely in read mode.
+This is to support a multiple round trip GSS mechanism.
 .It Fl n
 do not output the generated token.
 .It Fl r

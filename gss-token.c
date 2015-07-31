@@ -340,8 +340,10 @@ static void
 usage(void)
 {
 
-	fprintf(stderr, "usage: gss-token [-n] hostbased_service\n");
-	fprintf(stderr, "       gss-token -r [-ln] [hostbased_service]\n");
+	fprintf(stderr, "usage: gss-token [-Nn] [-c count] "
+	    "service@host\n");
+	fprintf(stderr, "       gss-token -r [-Nln] [-c count] "
+	    "[service@host]\n");
 	exit(1);
 }
 
