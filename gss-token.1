@@ -8,7 +8,7 @@
 .Nd generate and consume base64 GSS tokens
 .Sh SYNOPSIS
 .Nm
-.Op Fl Nlr
+.Op Fl Nlnr
 .Op Ar service@host
 .Sh DESCRIPTION
 .Nm
@@ -24,6 +24,8 @@ prepend
 to generated tokens and expect it on consumed tokens.
 .It Fl l
 loop infinitely in read mode.
+.It Fl n
+do not output the generated token.
 .It Fl r
 read a token rather than generate a token.
 .El

@@ -52,6 +52,12 @@
 		}							\
 	} while (0)
 
+/*
+ * global variables
+ */
+
+int	nflag = 0;
+
 static char *
 gss_mk_err(OM_uint32 maj_stat, OM_uint32 min_stat, const char *preamble)
 {
@@ -155,7 +161,8 @@ write_one_token(gss_name_t service, int negotiate)
 		goto bail;
 	}
 
-	printf("%s%s\n", negotiate?"Negotiate ":"", base64_output);
+	if (!nflag)
+		printf("%s%s\n", negotiate?"Negotiate ":"", base64_output);
 
 bail:
 	if (out.value)
@@ -333,8 +340,8 @@ static void
 usage(void)
 {
 
-	fprintf(stderr, "usage: gss-token hostbased_service\n");
-	fprintf(stderr, "       gss-token -r [-l] [hostbased_service]\n");
+	fprintf(stderr, "usage: gss-token [-n] hostbased_service\n");
+	fprintf(stderr, "       gss-token -r [-ln] [hostbased_service]\n");
 	exit(1);
 }
 
@@ -352,13 +359,16 @@ main(int argc, char **argv)
 	int		 rflag = 0;
 	int		 ret = 0;
 
-	while ((ch = getopt(argc, argv, "Nc:lr")) != -1) {
+	while ((ch = getopt(argc, argv, "Nc:nlr")) != -1) {
 		switch (ch) {
 		case 'N':
 			Nflag = 1;
 			break;
 		case 'c':
 			count = atoi(optarg);
+			break;
+		case 'n':
+			nflag = 1;
 			break;
 		case 'l':
 			lflag = 1;
