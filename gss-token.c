@@ -384,15 +384,15 @@ main(int argc, char **argv)
 			    "be provided.\n");
 			usage();
 		}
-		if (service)
-			gss_release_name(&min, &service);
-		return write_token(service, Nflag, count);
+		ret = write_token(service, Nflag, count);
+		goto done;
 	}
 
 	do {
 		ret = read_token(service, Nflag, count);
 	} while (lflag && !ret && !feof(stdin));
 
+done:
 	if (service)
 		gss_release_name(&min, &service);
 
