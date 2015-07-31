@@ -126,7 +126,7 @@ gss_mk_err(OM_uint32 maj_stat, OM_uint32 min_stat, const char *preamble)
 }
 
 static int
-write_token(gss_name_t service, int negotiate)
+write_one_token(gss_name_t service, int negotiate)
 {
 	gss_ctx_id_t	 ctx = GSS_C_NO_CONTEXT;
 	gss_buffer_desc	 in;
@@ -158,9 +158,6 @@ write_token(gss_name_t service, int negotiate)
 	printf("%s%s\n", negotiate?"Negotiate ":"", base64_output);
 
 bail:
-	if (service)
-		gss_release_name(&min, &service);
-
 	if (out.value)
 		gss_release_buffer(&min, &out);
 
@@ -174,6 +171,19 @@ bail:
 	}
 
 	free(base64_output);
+
+	return ret;
+}
+
+static int
+write_token(gss_name_t service, int negotiate, size_t count)
+{
+	size_t	i;
+	int	ret;
+
+	for (i=0; i < count; i++) {
+		ret = write_one_token(service, negotiate);
+	}
 
 	return ret;
 }
@@ -215,7 +225,7 @@ read_buffer(FILE *fp)
 }
 
 static int
-read_token(gss_name_t service, int negotiate)
+read_one_token(gss_name_t service, int negotiate)
 {
 	gss_cred_id_t	 cred = NULL;
         gss_name_t       client;
@@ -284,6 +294,19 @@ bail:
 	return ret;
 }
 
+static int
+read_token(gss_name_t service, int negotiate, size_t count)
+{
+	size_t	i;
+	int	ret;
+
+	for (i=0; i < count; i++) {
+		ret = read_one_token(service, negotiate);
+	}
+
+	return ret;
+}
+
 static gss_name_t
 import_service(char *service)
 {
@@ -318,19 +341,24 @@ usage(void)
 int
 main(int argc, char **argv)
 {
+	OM_uint32	 min;
 	gss_name_t	 service = NULL;
 	extern char	*optarg;
 	extern int	 optind;
+	size_t		 count = 1;
 	int		 ch;
 	int		 Nflag = 0;
 	int		 lflag = 0;
 	int		 rflag = 0;
 	int		 ret = 0;
 
-	while ((ch = getopt(argc, argv, "Nlr")) != -1) {
+	while ((ch = getopt(argc, argv, "Nc:lr")) != -1) {
 		switch (ch) {
 		case 'N':
 			Nflag = 1;
+			break;
+		case 'c':
+			count = atoi(optarg);
 			break;
 		case 'l':
 			lflag = 1;
@@ -356,12 +384,17 @@ main(int argc, char **argv)
 			    "be provided.\n");
 			usage();
 		}
-		return write_token(service, Nflag);
+		if (service)
+			gss_release_name(&min, &service);
+		return write_token(service, Nflag, count);
 	}
 
 	do {
-		ret = read_token(service, Nflag);
+		ret = read_token(service, Nflag, count);
 	} while (lflag && !ret && !feof(stdin));
+
+	if (service)
+		gss_release_name(&min, &service);
 
 	return ret;
 }
