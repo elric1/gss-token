@@ -293,7 +293,9 @@ read_one_token(gss_name_t service, int negotiate)
 
 	GBAIL("gss_display_name", maj, min);
 
-	printf("Authenticated: %.*s\n", (int)dname.length, (char *)dname.value);
+	if (!nflag)
+		printf("Authenticated: %.*s\n", (int)dname.length,
+		    (char *)dname.value);
 
 bail:
 	if (cred)
