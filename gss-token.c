@@ -35,6 +35,8 @@
 
 #include <gssapi/gssapi_krb5.h>
 
+#include <krb5/krb5.h>
+
 #include "base64.h"
 
 #define GBAIL(x, _maj, _min)	do {					\
@@ -51,6 +53,25 @@
 			goto bail;					\
 		}							\
 	} while (0)
+
+#define K5BAIL(x)	do {						\
+		kret = x;						\
+		if (kret) {						\
+			const char 	*k5err;				\
+									\
+			k5err = krb5_get_error_message(kctx, kret);	\
+			if (k5err) {					\
+				fprintf(stderr, "%s in %s:%s\n", k5err,	\
+				    #x, __func__);			\
+				krb5_free_error_message(kctx, k5err);	\
+			} else {					\
+				fprintf(stderr, "unknown error %d in "	\
+				    "%s:%s\n", kret, #x, __func__);	\
+			}						\
+			exit(1); /* XXXrcd: shouldn't exit */		\
+		}							\
+	} while (0)
+
 
 /*
  * global variables
@@ -132,13 +153,14 @@ gss_mk_err(OM_uint32 maj_stat, OM_uint32 min_stat, const char *preamble)
 }
 
 static int
-write_one_token(gss_name_t service, int negotiate)
+write_one_token(gss_name_t service, int delegate, int negotiate)
 {
 	gss_ctx_id_t	 ctx = GSS_C_NO_CONTEXT;
 	gss_buffer_desc	 in;
 	gss_buffer_desc	 out;
 	OM_uint32	 maj;
 	OM_uint32	 min;
+	OM_uint32	 flags = 0;
 	int		 ret = 0;
 	char		*base64_output = NULL;
 
@@ -147,8 +169,11 @@ write_one_token(gss_name_t service, int negotiate)
 	out.length = 0;
 	out.value  = 0;
 
+	if (delegate)
+		flags |= GSS_C_DELEG_FLAG;
+
         maj = gss_init_sec_context(&min, GSS_C_NO_CREDENTIAL, &ctx, service,
-	    GSS_C_NO_OID, 0, 0, GSS_C_NO_CHANNEL_BINDINGS, &in, NULL, &out,
+	    GSS_C_NO_OID, flags, 0, GSS_C_NO_CHANNEL_BINDINGS, &in, NULL, &out,
 	    NULL, NULL);
 
 	GBAIL("gss_init_sec_context", maj, min);
@@ -183,13 +208,13 @@ bail:
 }
 
 static int
-write_token(gss_name_t service, int negotiate, size_t count)
+write_token(gss_name_t service, int delegate, int negotiate, size_t count)
 {
 	size_t	i;
 	int	ret;
 
 	for (i=0; i < count; i++) {
-		ret = write_one_token(service, negotiate);
+		ret = write_one_token(service, delegate, negotiate);
 
 		if (i < count - 1)
 			printf("\n");
@@ -235,13 +260,17 @@ read_buffer(FILE *fp)
 }
 
 static int
-read_one_token(gss_name_t service, int negotiate)
+read_one_token(gss_name_t service, const char *ccname, int negotiate)
 {
 	gss_cred_id_t	 cred = NULL;
+	gss_cred_id_t	 deleg_creds = NULL;
         gss_name_t       client;
         gss_OID          mech_oid;
         gss_ctx_id_t     ctx = GSS_C_NO_CONTEXT;
         gss_buffer_desc  in, out, dname;
+	krb5_context	 kctx = NULL;
+	krb5_ccache	 ccache = NULL;
+	krb5_error_code	 kret;
         OM_uint32        maj, min;
 	char		*inbuf = NULL;
 	char		*tmp;
@@ -279,7 +308,7 @@ read_one_token(gss_name_t service, int negotiate)
  
         maj = gss_accept_sec_context(&min, &ctx, cred, &in,
 	    GSS_C_NO_CHANNEL_BINDINGS, &client, &mech_oid, &out,
-	    NULL, NULL, NULL);
+	    NULL, NULL, &deleg_creds);
 
 	GBAIL("gss_accept_sec_context", maj, min);
 
@@ -297,9 +326,23 @@ read_one_token(gss_name_t service, int negotiate)
 		printf("Authenticated: %.*s\n", (int)dname.length,
 		    (char *)dname.value);
 
+	if (ccname) {
+		K5BAIL(krb5_init_context(&kctx));
+		K5BAIL(krb5_cc_resolve(kctx, ccname, &ccache));
+
+		maj = gss_krb5_copy_ccache(&min, deleg_creds, ccache);
+		GBAIL("gss_krb5_copy_ccache", maj, min);
+	}
+
 bail:
+	if (kctx)
+		krb5_free_context(kctx);
+	if (ccache)
+		krb5_cc_close(kctx, ccache);
 	if (cred)
 		gss_release_cred(&min, &cred);
+	if (deleg_creds)
+		gss_release_cred(&min, &deleg_creds);
 
 	free(inbuf);
 
@@ -307,13 +350,13 @@ bail:
 }
 
 static int
-read_token(gss_name_t service, int negotiate, size_t count)
+read_token(gss_name_t service, const char *ccname, int negotiate, size_t count)
 {
 	size_t	i;
 	int	ret;
 
 	for (i=0; i < count; i++) {
-		ret = read_one_token(service, negotiate);
+		ret = read_one_token(service, ccname, negotiate);
 	}
 
 	return ret;
@@ -345,9 +388,9 @@ static void
 usage(void)
 {
 
-	fprintf(stderr, "usage: gss-token [-Nn] [-c count] "
+	fprintf(stderr, "usage: gss-token [-DNn] [-c count] "
 	    "service@host\n");
-	fprintf(stderr, "       gss-token -r [-Nln] [-c count] "
+	fprintf(stderr, "       gss-token -r [-Nln] [-C ccache] [-c count] "
 	    "[service@host]\n");
 	exit(1);
 }
@@ -361,13 +404,21 @@ main(int argc, char **argv)
 	extern int	 optind;
 	size_t		 count = 1;
 	int		 ch;
+	int		 Dflag = 0;
 	int		 Nflag = 0;
 	int		 lflag = 0;
 	int		 rflag = 0;
 	int		 ret = 0;
+	char		*ccname = NULL;
 
-	while ((ch = getopt(argc, argv, "Nc:nlr")) != -1) {
+	while ((ch = getopt(argc, argv, "C:DNc:nlr")) != -1) {
 		switch (ch) {
+		case 'C':
+			ccname = optarg;
+			break;
+		case 'D':
+			Dflag = 1;
+			break;
 		case 'N':
 			Nflag = 1;
 			break;
@@ -401,12 +452,23 @@ main(int argc, char **argv)
 			    "be provided.\n");
 			usage();
 		}
-		ret = write_token(service, Nflag, count);
+		if (ccname) {
+			fprintf(stderr, "Specifying a target ccache doesn't "
+			    "make sense without -r.\n");
+			usage();
+		}
+		ret = write_token(service, Dflag, Nflag, count);
 		goto done;
 	}
 
+	if (Dflag) {
+		fprintf(stderr, "Delegating credentials (-D) doesn't make "
+		    "sense when reading tokens (-r).\n");
+		usage();
+	}
+
 	do {
-		ret = read_token(service, Nflag, count);
+		ret = read_token(service, ccname, Nflag, count);
 	} while (lflag && !ret && !feof(stdin));
 
 done:

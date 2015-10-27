@@ -8,12 +8,13 @@
 .Nd generate and consume base64 GSS tokens
 .Sh SYNOPSIS
 .Nm
-.Op Fl Nn
+.Op Fl DNn
 .Op Fl c count
 .Ar service@host
 .Nm
 .Fl r
 .Op Fl Nln
+.Op Fl C Ar ccache
 .Op Fl c count
 .Op Ar service@host
 .Sh DESCRIPTION
@@ -23,7 +24,18 @@ It is mostly useful for testing.
 .Pp
 .Nm
 supports the following options:
-.Bl -tag -width indentxx
+.Bl -tag -width indentxxxx
+.It Fl C Ar ccache
+write an accepted delegated credential into
+.Ar ccache .
+This only makes sense if
+.Fl r
+is specified.
+.It Fl D
+delegate credentials.
+This only makes sense as a client, that is when
+.Fl r
+is not specified.
 .It Fl N
 prepend
 .Dq Negotiate\ 
