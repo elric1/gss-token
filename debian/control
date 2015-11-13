@@ -1,0 +1,14 @@
+Source: gss-token
+Section: unknown
+Priority: extra
+Maintainer: Roland C. Dowdeswell <roland.dowdeswell@twosigma.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.3
+Homepage: http://oskt.secure-endpoints.com/
+
+Package: gss-token
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: generate and consume base64 GSS tokens
+     gss-token generates and consumes base64 encoded GSS tokens.
+     It is mostly useful for testing.
