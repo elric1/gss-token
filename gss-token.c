@@ -216,7 +216,7 @@ write_token(gss_name_t service, int delegate, int negotiate, size_t count)
 	for (i=0; i < count; i++) {
 		ret = write_one_token(service, delegate, negotiate);
 
-		if (i < count - 1)
+		if (!nflag && i < count - 1)
 			printf("\n");
 	}
 
