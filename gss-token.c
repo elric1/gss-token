@@ -319,7 +319,6 @@ read_one_token(gss_name_t service, const char *ccname, int negotiate)
 	 */
 
 	maj = gss_display_name(&min, client, &dname, NULL);
-
 	GBAIL("gss_display_name", maj, min);
 
 	if (!nflag)
