@@ -27,6 +27,7 @@ fi
 
 AC_CHECK_HEADERS([gssapi/gssapi_krb5.h gssapi/gssapi.h gssapi.h ], break,,)
 
+AC_SEARCH_LIBS(krb5_init_context, [krb5],,,)
 AC_SEARCH_LIBS(gss_init_sec_context, [gssapi gssapi_krb5],,,)
 
 #
