@@ -18,18 +18,21 @@ AC_PROG_CPP
 AC_ARG_WITH([gss],
 	    [AC_HELP_STRING([--with-gss=<DIR>],
 			    [choose the GSSAPI implementation])],
-	    [gssdir=$withval],
-	    [gssdir=/usr])
+	    [gss=$withval],)
+
+if test -d ${gss}; then
+	CPPFLAGS="$CPPFLAGS -I$gss/include"
+	LDFLAGS="$LDFLAGS -L$gss/lib -Wl,-rpath=$gss/lib"
+fi
 
 AC_ARG_WITH([gss-dir],
 	    [AC_HELP_STRING([--with-gss=<DIR>],
 			    [choose the GSSAPI implementation])],
-	    [gssdir=$withval],
-	    [gssdir=/usr])
+	    [gssdir=$withval],)
 
 if test -d ${gssdir}; then
 	CPPFLAGS="$CPPFLAGS -I$gssdir/include"
-	LDFLAGS="$LDFLAGS -L$gssdir/lib"
+	LDFLAGS="$LDFLAGS -L$gssdir/lib -Wl,-rpath=$gssdir/lib"
 fi
 
 AC_CHECK_HEADERS([gssapi/gssapi_krb5.h gssapi/gssapi.h gssapi.h], break,,)
