@@ -14,7 +14,6 @@ dnl Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CPP
-AC_PROG_LIBTOOL
 
 AC_ARG_WITH([gss],
 	    [AC_HELP_STRING([--with-gss=<DIR>],
