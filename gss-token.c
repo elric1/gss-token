@@ -33,9 +33,33 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <gssapi/gssapi_krb5.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_GSSAPI_GSSAPI_KRB5_H
+#include <gssapi/gssapi_krb5.h>
+#else
+#ifdef HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#else
+#ifdef HAVE_GSSAPI_H
+#include <gssapi.h>
+#else
+#error Must have a gssapi header
+#endif
+#endif
+#endif
+
+#ifdef HAVE_KRB5_KRB5_H
 #include <krb5/krb5.h>
+#else
+#ifdef HAVE_KRB5_H
+#include <krb5.h>
+#else
+#error Must have krb5.h
+#endif
+#endif
 
 #include "base64.h"
 
