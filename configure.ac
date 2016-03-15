@@ -8,6 +8,8 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign 1.10.1])
 # AM_MAINTAINER_MODE
 
+AC_CONFIG_MACRO_DIR([cf])
+
 dnl Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
