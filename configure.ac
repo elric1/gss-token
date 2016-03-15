@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.62])
-AC_INIT([knc], [1.8], [elric@imrryr.org])
+AC_INIT([gss-token], [1.0], [elric@imrryr.org])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign 1.10.1])
