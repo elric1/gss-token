@@ -2,7 +2,7 @@ gss-token (1.0) unstable; urgency=low
 
   * Lots of autoconf cleanup
 
- -- Roland C. Dowdeswell <roland.dowdeswell@twosigma.com>  Fri, 15 Mar 2016 15:52:39 +0100
+ -- Roland C. Dowdeswell <roland.dowdeswell@twosigma.com>  Tue, 15 Mar 2016 15:52:39 +0100
 
 gss-token (0.1-1) unstable; urgency=low
 
