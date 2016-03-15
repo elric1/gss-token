@@ -350,11 +350,28 @@ read_one_token(gss_name_t service, const char *ccname, int negotiate)
 		    (char *)dname.value);
 
 	if (ccname) {
+#ifdef HAVE_GSS_STORE_CRED_INTO
+		gss_key_value_set_desc		store;
+		gss_key_value_element_desc	elem;
+		int				overwrite_cred = 1;
+		int				default_cred = 0;
+
+		elem.key = "ccache";
+		elem.value = ccname;
+		store.count = 1;
+		store.elements = &elem;
+
+		maj = gss_store_cred_into(&min, deleg_creds, GSS_C_INITIATE,
+		    GSS_C_NO_OID, overwrite_cred, default_cred, &store, NULL,
+		    NULL);
+		GBAIL("gss_store_cred_into", maj, min);
+#else
 		K5BAIL(krb5_init_context(&kctx));
 		K5BAIL(krb5_cc_resolve(kctx, ccname, &ccache));
 
 		maj = gss_krb5_copy_ccache(&min, deleg_creds, ccache);
 		GBAIL("gss_krb5_copy_ccache", maj, min);
+#endif
 	}
 
 bail:

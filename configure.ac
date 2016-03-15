@@ -30,6 +30,7 @@ AC_CHECK_HEADERS([krb5/krb5.h krb5.h], break,,)
 
 AC_SEARCH_LIBS(krb5_init_context, [krb5],,,)
 AC_SEARCH_LIBS(gss_init_sec_context, [gssapi gssapi_krb5],,,)
+AC_CHECK_FUNCS([gss_store_cred_into],,)
 
 #
 # We only enable warnings if --enable-developer is specified.
