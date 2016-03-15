@@ -14,9 +14,15 @@ AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_PROG_LIBTOOL
 
+AC_ARG_WITH([gss],
+	    [AC_HELP_STRING([--with-gss=<DIR>],
+			    [choose the GSSAPI implementation])],
+	    [gssdir=$withval],
+	    [gssdir=/usr])
+
 AC_ARG_WITH([gss-dir],
-	    [AC_HELP_STRING([--with-gss-dir=<DIR>],
-			    [choose the GSSAPI dir])],
+	    [AC_HELP_STRING([--with-gss=<DIR>],
+			    [choose the GSSAPI implementation])],
 	    [gssdir=$withval],
 	    [gssdir=/usr])
 
