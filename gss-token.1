@@ -13,7 +13,7 @@
 .Ar service@host
 .Nm
 .Fl r
-.Op Fl Nln
+.Op Fl MNln
 .Op Fl C Ar ccache
 .Op Fl c count
 .Op Ar service@host
@@ -36,6 +36,16 @@ delegate credentials.
 This only makes sense as a client, that is when
 .Fl r
 is not specified.
+.It Fl M
+copy the default ccache to a MEMORY: ccache before each
+separate write operation.
+The default ccache will not pick up any obtained service
+tickets.
+If specified with
+.Fl c ,
+the cache will revert to its original state before each
+new token is written.
+This can be used to load test the KDC.
 .It Fl N
 prepend
 .Dq Negotiate\ 

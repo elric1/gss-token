@@ -231,20 +231,74 @@ bail:
 	return ret;
 }
 
-static int
-write_token(gss_name_t service, int delegate, int negotiate, size_t count)
+static krb5_error_code
+copy_cache(krb5_context kctx, krb5_ccache from, krb5_ccache to)
 {
-	size_t	i;
-	int	ret;
+	krb5_error_code	kret;
+	krb5_principal	princ = NULL;
+	krb5_cc_cursor	cursor;
+	krb5_creds	cred;
+
+	K5BAIL(krb5_cc_get_principal(kctx, from, &princ));
+	K5BAIL(krb5_cc_initialize(kctx, to, princ));
+	K5BAIL(krb5_cc_start_seq_get(kctx, from, &cursor));
+	for (;;) {
+		kret = krb5_cc_next_cred(kctx, from, &cursor, &cred);
+		if (kret)
+			break;
+		kret = krb5_cc_store_cred(kctx, to, &cred);
+		krb5_free_cred_contents(kctx, &cred);
+		if (kret)
+			break;
+	}
+	krb5_cc_end_seq_get(kctx, from, &cursor);
+
+	if (kret == KRB5_CC_END)
+		kret = 0;
+	K5BAIL(kret);
+
+bail:
+	if (princ)
+		krb5_free_principal(kctx, princ);
+
+	return kret;
+}
+
+static int
+write_token(gss_name_t service, int delegate, int negotiate, int memcache,
+	    size_t count)
+{
+	krb5_error_code	kret;
+	krb5_context	kctx = NULL;
+	krb5_ccache	def_cache = NULL;
+	krb5_ccache	mem_cache = NULL;
+	size_t		i;
+
+	if (memcache) {
+		K5BAIL(krb5_init_context(&kctx));
+		K5BAIL(krb5_cc_default(kctx, &def_cache));
+		K5BAIL(krb5_cc_resolve(kctx, "MEMORY:mem_cache", &mem_cache));
+		putenv("KRB5CCNAME=MEMORY:mem_cache");
+	}
 
 	for (i=0; i < count; i++) {
-		ret = write_one_token(service, delegate, negotiate);
+		if (memcache)
+			K5BAIL(copy_cache(kctx, def_cache, mem_cache));
+		kret = write_one_token(service, delegate, negotiate);
 
 		if (!nflag && i < count - 1)
 			printf("\n");
 	}
 
-	return ret;
+bail:
+	if (kctx)
+		krb5_free_context(kctx);
+	if (def_cache)
+		krb5_cc_close(kctx, def_cache);
+	if (mem_cache)
+		krb5_cc_close(kctx, mem_cache);
+
+	return kret;
 }
 
 static char *
@@ -445,19 +499,23 @@ main(int argc, char **argv)
 	size_t		 count = 1;
 	int		 ch;
 	int		 Dflag = 0;
+	int		 Mflag = 0;
 	int		 Nflag = 0;
 	int		 lflag = 0;
 	int		 rflag = 0;
 	int		 ret = 0;
 	char		*ccname = NULL;
 
-	while ((ch = getopt(argc, argv, "C:DNc:nlr")) != -1) {
+	while ((ch = getopt(argc, argv, "C:DMNc:nlr")) != -1) {
 		switch (ch) {
 		case 'C':
 			ccname = optarg;
 			break;
 		case 'D':
 			Dflag = 1;
+			break;
+		case 'M':
+			Mflag = 1;
 			break;
 		case 'N':
 			Nflag = 1;
@@ -497,7 +555,7 @@ main(int argc, char **argv)
 			    "make sense without -r.\n");
 			usage();
 		}
-		ret = write_token(service, Dflag, Nflag, count);
+		ret = write_token(service, Dflag, Nflag, Mflag, count);
 		goto done;
 	}
 
