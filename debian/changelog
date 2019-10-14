@@ -1,3 +1,10 @@
+gss-token (1.1) unstable; urgency=low
+
+  * Add a -M flag which avoids caching in the client side code.
+  * debian packaging requires dh-autoreconf.
+
+ -- Roland C. Dowdeswell <roland.dowdeswell@twosigma.com>  Mon, 14 Oct 2019 22:30:00 +0100
+
 gss-token (1.0) unstable; urgency=low
 
   * Lots of autoconf cleanup
