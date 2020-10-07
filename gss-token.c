@@ -102,6 +102,7 @@
  * global variables
  */
 
+int	Sflag = 0;
 int	nflag = 0;
 
 static char *
@@ -220,18 +221,35 @@ write_token(gss_buffer_t out, int negotiate)
 	char	*outstr = NULL;
 	char	*p = out->value;
 	size_t	 len = out->length;
+	size_t	 inc;
 	int	 ret;
+	int	 first = 1;
 
 	if (nflag)
 		return 0;
 
-	outstr = base64_encode(p, len);
-	if (!outstr) {
-		fprintf(stderr, "Out of memory.\n");
-		return 1;
-	}
-	printf("%s%s\n", negotiate?"Negotiate ":"", outstr);
-	free(outstr);
+	inc = len;
+	if (Sflag)
+		inc = Sflag;
+
+	do {
+		if (first)
+			first = 0;
+		else
+			printf("\n");
+		if (len < inc)
+			inc = len;
+		outstr = base64_encode(p, inc);
+		if (!outstr) {
+			fprintf(stderr, "Out of memory.\n");
+			return 1;
+		}
+		printf("%s%s\n", negotiate?"Negotiate ":"", outstr);
+		free(outstr);
+		p   += inc;
+		len -= inc;
+	} while (len > 0);
+
 	return 0;
 }
 
@@ -537,7 +555,7 @@ main(int argc, char **argv)
 	int		 ret = 0;
 	char		*ccname = NULL;
 
-	while ((ch = getopt(argc, argv, "C:DMNc:nlr")) != -1) {
+	while ((ch = getopt(argc, argv, "C:DMNS:c:nlr")) != -1) {
 		switch (ch) {
 		case 'C':
 			ccname = optarg;
@@ -550,6 +568,9 @@ main(int argc, char **argv)
 			break;
 		case 'N':
 			Nflag = 1;
+			break;
+		case 'S':
+			Sflag = atoi(optarg);
 			break;
 		case 'c':
 			count = atoi(optarg);
