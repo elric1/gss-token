@@ -104,6 +104,7 @@
 
 int	Sflag = 0;
 int	nflag = 0;
+gss_OID	global_mech = GSS_C_NO_OID;
 
 static char *
 gss_mk_err(OM_uint32 maj_stat, OM_uint32 min_stat, const char *preamble)
@@ -350,7 +351,7 @@ initiate_one(gss_name_t service, int delegate, int negotiate)
 		}
 
 		maj = gss_init_sec_context(&min, GSS_C_NO_CREDENTIAL, &ctx,
-		    service, GSS_C_NO_OID, flags, 0,
+		    service, global_mech, flags, 0,
 		    GSS_C_NO_CHANNEL_BINDINGS, &in, NULL, &out,
 		    NULL, NULL);
 
@@ -563,6 +564,26 @@ bail:
 }
 
 static void
+print_all_mechs(void)
+{
+	OM_uint32	maj, min;
+	gss_OID_set	mech_set;
+	size_t		i;
+	int		ret = 0;
+
+	maj = gss_indicate_mechs(&min, &mech_set);
+	GBAIL("gss_indicate_mechs", maj, min);
+
+	for (i=0; i < mech_set->count; i++)
+		printf("%s\n", gss_oid_to_name(&mech_set->elements[i]));
+
+	maj = gss_release_oid_set(&min, &mech_set);
+
+bail:
+	exit(ret);
+}
+
+static void
 usage(void)
 {
 
@@ -589,8 +610,9 @@ main(int argc, char **argv)
 	int		 rflag = 0;
 	int		 ret = 0;
 	char		*ccname = NULL;
+	char		*mech = NULL;
 
-	while ((ch = getopt(argc, argv, "C:DMNS:c:nlr")) != -1) {
+	while ((ch = getopt(argc, argv, "C:DMNS:c:m:nlr")) != -1) {
 		switch (ch) {
 		case 'C':
 			ccname = optarg;
@@ -610,6 +632,9 @@ main(int argc, char **argv)
 		case 'c':
 			count = atoi(optarg);
 			break;
+		case 'm':
+			mech = strdup(optarg);
+			break;
 		case 'n':
 			nflag = 1;
 			break;
@@ -627,6 +652,18 @@ main(int argc, char **argv)
 
 	argc -= optind;
 	argv += optind;
+
+	if (mech) {
+		if (mech[0] == '?' && mech[1] == '\0') {
+			print_all_mechs();
+			exit(0);
+		}
+		global_mech = gss_name_to_oid(mech);
+		if (!global_mech) {
+			fprintf(stderr, "Invalid mech \"%s\".\n", mech);
+			usage();
+		}
+	}
 
 	if (argc > 0)
 		service = import_service(*argv);
