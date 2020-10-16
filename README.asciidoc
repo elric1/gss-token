@@ -2,7 +2,22 @@ GSS-TOKEN
 =========
 
 gss-token is simple program that generates and consumes BASE64 encoded
-GSS tokens.  It is mostly useful for testing GSS.
+GSS tokens.  It comes in handy when testing as you can cut and paste
+the tokens between terminal windows to test the Kerberos rather than
+having to have a client/server (like knc(1)) program to do it.  It's
+especially helpful when you have firewalls to configure to let extra
+ports through.
+
+HTTP SPNEGO authentication also uses base64 tokens and gss-token
+supports add that text on with the -N flag:
+
+......................................................................
+	$ curl -H "Authorization: $(gss-token -N HTTP@server)" \
+	> https://server/path/to/file
+......................................................................
+
+will opportunistically send a GSSAPI authentication with your HTTP
+request.
 
 BUILDING
 --------
