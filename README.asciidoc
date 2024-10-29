@@ -44,6 +44,9 @@ a -N flag, and so:
 will opportunistically send a GSSAPI authentication with your HTTP
 request.
 
+This technique can be used if curl or wget are compiled without Kerberos
+support at your site or for clients that don't support Kerberos at all.
+
 Poor logging on a Kerberos server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,3 +82,55 @@ Some web servers may log the `Authorization` header.  In this case, you
 can still use gss-token(1) to examine what's wrong.  If the log message
 is older than clock-skew, just setup `/tmp/my-krb5.conf` and increase
 clock-skew for the purposes of your test.
+
+Benchmarking
+~~~~~~~~~~~~
+
+gss-token(1) can be used to perform basic benchmarking, however, you
+must be very careful to disable certain Kerberos behaviours such as
+using DNS to canonicalise hostnames or you will find that you are just
+testing nscd's speed.  Once you have crafted a host configuration
+where:
+
+......................................................................
+	$ strace -o /tmp/tr gss-token -n host@host.name
+......................................................................
+
+isn't contacting any external services (assuming that a ticket for
+host/host.name@REALM is in your ccache), then you are reading to
+benchmark your Kerberos client implementation:
+
+......................................................................
+	$ time gss-token -n -c 1024 host@host.name
+......................................................................
+
+When divided by 1024 will let you know how long it takes your local
+client implementation to generate a base64 gss token.
+
+......................................................................
+	$ time gss-token -n -M -c 1024 host@host.name
+......................................................................
+
+The `-M` flag empties the ccache before each authentication.  Now you
+are measuring how long it takes to generate a gss token including the
+KDC communication.  If you subtract the results from the prior benchmark,
+it should be (on average) the time that it takes for this client to get
+a response from the KDC infrastructure.
+
+This test is only run serially, but you can get a very rough idea
+how a KDC responds to load using:
+
+......................................................................
+	$ for i in $(seq 32); do
+	>	time gss-token -n -M -c 1024 host@host.name &
+	> done
+	$ wait
+......................................................................
+
+Keep in mind:
+
+1. you are only getting a rough idea using this methodology,
+2. you are in danger of measuring the client's performance rather than
+   the KDC's performance,
+3. don't do this on your production KDCs, spin up a quick local Kerberos
+   REALM and test against a single local KDC.
